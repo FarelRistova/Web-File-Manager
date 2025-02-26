@@ -33,6 +33,7 @@ Route::prefix('/file-manager')->name('manager.')->group(function () {
         Route::get('history/folders', [FolderController::class, 'historyFolder'])->name('folders.history');
         Route::patch('/folders/{folder}/restore', [FolderController::class, 'restoreFolder'])->name('folders.restore');
         Route::delete('/folders/{folder}/force-delete', [FolderController::class, 'forceDeleteFolder'])->name('folders.forceDelete');
+        Route::get('/folders/datatable', [FolderController::class, 'datatableFolder'])->name('datatableFolder');
 
         // Route untuk file
         Route::get('/files/{folder}', [FileController::class, 'index'])->name('files.index');
@@ -46,6 +47,9 @@ Route::prefix('/file-manager')->name('manager.')->group(function () {
         Route::patch('/files/{file}/restore', [FileController::class, 'restoreFile'])->name('files.restore');
         Route::delete('/files/{file}/force-delete', [FileController::class, 'forceDeleteFile'])->name('files.forceDelete');
         Route::get('/files/download/{file}', [FileController::class, 'download'])->name('files.download');
+        Route::get('/files/datatable/{folder}', [FileController::class, 'datatableFile'])->name('datatableFile');
+        Route::get('/files/download/{file}', [FileController::class, 'download'])->name('files.download');
+
     });
 });
 

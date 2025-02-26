@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Yajra\DataTables\Facades\DataTables;
 
 class FolderController extends Controller
 {
@@ -15,6 +16,19 @@ class FolderController extends Controller
     public function __construct()
     {
         $this->middleware('auth'); // Memastikan user harus login
+    }
+
+        public function datatableFolder()
+    {
+        $folders = Folder::where('user_id', Auth::id())->select(['id', 'name', 'created_at']);
+
+        return DataTables::of($folders)
+            ->addColumn('actions', function ($folder) {
+                // Just return the ID for reference, the actual actions will be rendered in frontend
+                return $folder->id;
+            })
+            ->rawColumns(['actions'])
+            ->make(true);
     }
 
     public function index()
@@ -83,14 +97,6 @@ class FolderController extends Controller
         if ($folder->user_id !== Auth::id()) {
             abort(403, 'Unauthorized action.');
         }
-
-        // Hapus semua file dalam folder terkait dari storage
-        foreach ($folder->files as $file) {
-            Storage::disk('public')->delete($file->path);
-        }
-
-        // Hapus semua file dalam folder terkait dari database
-        $folder->files()->delete();
 
         // Hapus folder
         $folder->delete();

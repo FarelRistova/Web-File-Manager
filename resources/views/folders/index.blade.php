@@ -30,55 +30,17 @@
                     </div>
                 </div>
 
-                @if ($folders->isEmpty())
-                    <div class="alert alert-info">
-                        No deleted folders found.
-                    </div>
-                @else
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="fw-semibold">Name</th>
-                                    <th class="fw-semibold text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($folders as $folder)
-                                    <tr class="cursor-pointer"
-                                        onclick="window.location='{{ route('manager.files.index', $folder->id) }}'">
-                                        <td class="text-nowrap ps-4">
-                                            <i class="fas fa-folder me-2 text-warning"></i>
-                                            {{ $folder->name }}
-                                        </td>
-                                        <td>
-                                            <div class="d-flex align-items-center justify-content-center"
-                                                onclick="event.stopPropagation()">
-                                                <!-- Tombol Rename -->
-                                                <button type="button" class="btn btn-sm btn-outline-warning me-2"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#renameFolderModal{{ $folder->id }}" title="Rename">
-                                                    <i class="fas fa-edit me-1"></i>Rename
-                                                </button>
-
-                                                <!-- Tombol Delete -->
-                                                <form action="{{ route('manager.folders.destroy', $folder->id) }}"
-                                                    method="POST" onsubmit="event.stopPropagation()">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                        title="Delete">
-                                                        <i class="fas fa-trash me-1"></i>Delete
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="foldersTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="fw-semibold">Name</th>
+                                <th class="fw-semibold text-center">Created At</th>
+                                <th class="fw-semibold text-center">Actions</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -99,8 +61,8 @@
                         <div class="modal-body">
                             <div class="mb-3">
                                 <label for="folderName{{ $folder->id }}" class="form-label">Folder Name</label>
-                                <input type="text" class="form-control" id="folderName{{ $folder->id }}"
-                                    name="name" value="{{ $folder->name }}" required>
+                                <input type="text" class="form-control" id="folderName{{ $folder->id }}" name="name"
+                                    value="{{ $folder->name }}" required>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -149,14 +111,71 @@
         }
     </style>
 
-    {{-- Auto Hide Alert --}}
+    {{-- DataTable Initialization --}}
     <script>
-        setTimeout(() => {
-            let alert = document.querySelector('.alert');
-            if (alert) {
-                alert.classList.add('fade');
-                setTimeout(() => alert.remove(), 500);
-            }
-        }, 3000);
+        $(document).ready(function() {
+            $('#foldersTable').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: "{{ route('manager.datatableFolder') }}",
+                columns: [{
+                        data: 'name',
+                        name: 'name',
+                        render: function(data, type, row) {
+                            return `<div class="ps-4 cursor-pointer" onclick="window.location='{{ route('manager.files.index', '') }}/${row.id}'">
+                                <i class="fas fa-folder me-2 text-warning"></i> ${data}
+                            </div>`;
+                        }
+                    },
+                    {
+                        data: 'created_at',
+                        name: 'created_at',
+                        className: 'text-center',
+                        render: function(data) {
+                            return new Date(data).toLocaleDateString('id-ID', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                        }
+                    },
+                    {
+                        data: 'actions',
+                        name: 'actions',
+                        orderable: false,
+                        searchable: false,
+                        className: 'text-center',
+                        render: function(data, type, row) {
+                            return `<div class="d-flex align-items-center justify-content-center" onclick="event.stopPropagation()">
+                                <!-- Tombol Rename -->
+                                <button type="button" class="btn btn-sm btn-outline-warning me-2"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#renameFolderModal${row.id}" title="Rename">
+                                    <i class="fas fa-edit me-1"></i>Rename
+                                </button>
+
+                                <!-- Tombol Delete -->
+                                <form action="{{ route('manager.folders.destroy', '') }}/${row.id}"
+                                    method="POST" onsubmit="event.stopPropagation()">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        title="Delete">
+                                        <i class="fas fa-trash me-1"></i>Delete
+                                    </button>
+                                </form>
+                            </div>`;
+                        }
+                    }
+                ]
+            });
+        });
+
+        // Auto-hide alerts after 3 seconds
+        setTimeout(function() {
+            $('.alert').fadeOut('fast');
+        }, 3000); // 3000ms = 3 detik
     </script>
 @endsection

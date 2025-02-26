@@ -34,7 +34,7 @@
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover align-middle" id="filesTable">
                         <thead class="table-light">
                             <tr>
                                 <th class="fw-semibold">File Name</th>
@@ -44,74 +44,6 @@
                                 <th class="fw-semibold">Preview</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @foreach ($files as $file)
-                                <tr>
-                                    <td class="text-nowrap">
-                                        <i class="fas fa-file me-2 text-primary"></i>
-                                        {{ $file->name }}
-                                    </td>
-                                    <td class="text-nowrap">
-                                        @php
-                                            $formattedSize = number_format($file->size / 1024, 1) . ' KB';
-                                        @endphp
-                                        <span class="badge bg-light text-dark">{{ $formattedSize }}</span>
-                                    </td>
-                                    <td class="text-nowrap">
-                                        <small class="text-muted">
-                                            {{ $file->created_at->setTimezone('Asia/Jakarta')->format('d M Y H:i') }}
-                                        </small>
-                                    </td>
-                                    <td>
-                                        <div class="dropdown">
-                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                                                id="dropdownMenuButton{{ $file->id }}" data-bs-toggle="dropdown"
-                                                aria-expanded="false">
-                                                Actions
-                                            </button>
-                                            <ul class="dropdown-menu shadow-sm"
-                                                aria-labelledby="dropdownMenuButton{{ $file->id }}">
-                                                <li>
-                                                    <button class="dropdown-item" data-bs-toggle="modal"
-                                                        data-bs-target="#renameFileModal{{ $file->id }}">
-                                                        <i class="fas fa-edit text-warning me-2"></i>Rename
-                                                    </button>
-                                                </li>
-                                                <li>
-                                                    <hr class="dropdown-divider">
-                                                </li>
-                                                <li>
-                                                    <form action="{{ route('manager.files.destroy', $file->id) }}"
-                                                        method="POST">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="dropdown-item">
-                                                            <i class="fas fa-trash text-danger me-2"></i>Delete
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                                <li>
-                                                    <hr class="dropdown-divider">
-                                                </li>
-                                                <li>
-                                                    <a href="{{ route('manager.files.download', $file->id) }}"
-                                                        class="dropdown-item">
-                                                        <i class="fas fa-download text-success me-2"></i>Download
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </td>
-
-                                    <td>
-                                        <a href="{{ Storage::url($file->path) }}" target="_blank"
-                                            class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-eye me-2"></i>View File
-                                        </a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
                     </table>
                 </div>
             </div>
@@ -176,12 +108,89 @@
 
     {{-- Auto Hide Alert --}}
     <script>
-        setTimeout(() => {
-            let alert = document.querySelector('.alert');
-            if (alert) {
-                alert.classList.add('fade');
-                setTimeout(() => alert.remove(), 500);
-            }
-        }, 3000);
+        $(document).ready(function() {
+
+            $('#filesTable').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: "{{ route('manager.datatableFile', $folder->id) }}",
+                columns: [{
+                        data: 'name',
+                        name: 'name'
+                    },
+                    {
+                        data: 'size',
+                        name: 'size',
+                        render: function(data) {
+                            return (data / 1000).toFixed() + ' KB';
+                        }
+                    },
+                    {
+                        data: 'created_at',
+                        name: 'created_at',
+                        render: function(data) {
+                            return new Date(data).toLocaleDateString('id-ID');
+                        }
+                    },
+                    {
+                        data: 'actions',
+                        name: 'actions',
+                        orderable: false,
+                        searchable: false,
+                        render: function(data, type, row) {
+                            return `
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                    id="dropdownMenuButton${row.id}" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                    Actions
+                                </button>
+                                <ul class="dropdown-menu shadow-sm"
+                                    aria-labelledby="dropdownMenuButton${row.id}">
+                                    <li>
+                                        <button class="dropdown-item" data-bs-toggle="modal"
+                                            data-bs-target="#renameFileModal${row.id}">
+                                            <i class="fas fa-edit text-warning me-2"></i>Rename
+                                        </button>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form action="{{ route('manager.files.destroy', '') }}/${row.id}" method="POST">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="dropdown-item">
+                                                <i class="fas fa-trash text-danger me-2"></i>Delete
+                                            </button>
+                                        </form>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a href="{{ route('manager.files.download', '') }}/${row.id}" class="dropdown-item">
+                                            <i class="fas fa-download text-success me-2"></i>Download
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>`;
+                        }
+                    },
+                    {
+                        data: 'preview',
+                        name: 'preview',
+                        orderable: false,
+                        searchable: false,
+                        render: function(data, type, row) {
+                            return `<a href="{{ Storage::url('${row.path}') }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye me-2"></i>View File
+                    </a>`;
+                        }
+                    }
+                ]
+            });
+
+        });
+        // Auto-hide alerts after 3 seconds
+        setTimeout(function() {
+            $('.alert').fadeOut('fast');
+        }, 3000); // 3000ms = 3 detik
     </script>
 @endsection

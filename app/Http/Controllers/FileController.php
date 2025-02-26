@@ -7,6 +7,7 @@ use App\Models\Folder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Str;
 
 class FileController extends Controller
@@ -15,6 +16,22 @@ class FileController extends Controller
     public function __construct()
     {
         $this->middleware('auth'); // Memastikan user harus login
+    }
+
+    public function datatableFile($folderId)
+    {
+        $files = File::where('folder_id', $folderId)->select(['id', 'name', 'size', 'path', 'created_at']);
+
+        return DataTables::of($files)
+            ->addColumn('actions', function ($file) {
+                // Tidak perlu mengembalikan HTML di sini, karena akan di-render di frontend
+                return $file->id; // Hanya mengembalikan ID untuk referensi
+            })
+            ->addColumn('preview', function ($file) {
+                return $file->path; // Hanya mengembalikan path untuk referensi
+            })
+            ->rawColumns(['actions', 'preview'])
+            ->make(true);
     }
 
     public function index($folderid)
@@ -156,11 +173,12 @@ class FileController extends Controller
         $file = File::findOrFail($id);
         $filePath = storage_path("app/public/" . $file->path);
 
-        // Debugging: Cek apakah file ada
+        // Check if file exists
         if (!file_exists($filePath)) {
-            dd("File tidak ditemukan: " . $filePath);
+            return back()->with('error', 'File not found.');
         }
 
+        // This will force download with the original file name
         return response()->download($filePath, $file->name);
     }
 }
